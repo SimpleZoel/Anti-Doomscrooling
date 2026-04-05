@@ -8,9 +8,9 @@
     <style>
         body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #121212; color: white; margin: 0; }
         .timer { font-size: 5rem; font-weight: bold; margin: 20px 0; color: #00ff88; }
-        button { padding: 15px 30px; font-size: 1.2rem; border: none; border-radius: 25px; cursor: pointer; transition: 0.3s; }
+        button { padding: 15px 30px; font-size: 1.2rem; border: none; border-radius: 25px; cursor: pointer; transition: 0.3s; width: 200px; margin: 5px; }
         .start { background: #00ff88; color: black; }
-        .stop { background: #ff4444; color: white; margin-top: 10px; }
+        .stop { background: #ff4444; color: white; }
     </style>
 </head>
 <body>
@@ -18,40 +18,57 @@
     <h2>Waktunya Berhenti?</h2>
     <div class="timer" id="display">15:00</div>
     
-    <button class="start" onclick="startTimer(15)">Mulai 15 Menit</button>
+    <button class="start" id="startBtn" onclick="startTimer(15)">Mulai 15 Menit</button>
     <button class="stop" onclick="resetTimer()">Reset</button>
 
     <script>
-        let timer;
-        let timeLeft;
+        let timerInterval;
+        
+        // Cek saat aplikasi dibuka kembali
+        window.onload = function() {
+            const endTime = localStorage.getItem('endTime');
+            if (endTime) {
+                resumeTimer(parseInt(endTime));
+            }
+        };
 
         function startTimer(minutes) {
-            clearInterval(timer);
-            timeLeft = minutes * 60;
-            updateDisplay();
+            const duration = minutes * 60 * 1000;
+            const endTime = Date.now() + duration;
+            localStorage.setItem('endTime', endTime); // Simpan waktu selesai ke memori HP
             
-            // Minta izin notifikasi
             Notification.requestPermission();
+            resumeTimer(endTime);
+        }
 
-            timer = setInterval(() => {
-                timeLeft--;
-                updateDisplay();
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    alert("Waktu habis! Segera tutup media sosialmu.");
-                    new Notification("Waktu Habis!", { body: "Sudah cukup doomscrolling-nya hari ini." });
+        function resumeTimer(endTime) {
+            clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                const now = Date.now();
+                const diff = endTime - now;
+
+                if (diff <= 0) {
+                    clearInterval(timerInterval);
+                    localStorage.removeItem('endTime');
+                    document.getElementById('display').innerText = "00:00";
+                    alert("WAKTU HABIS! Tutup sosmedmu sekarang.");
+                    new Notification("WAKTU HABIS!", { body: "Ayo kembali produktif!" });
+                } else {
+                    updateDisplay(Math.floor(diff / 1000));
                 }
             }, 1000);
         }
 
-        function updateDisplay() {
-            const m = Math.floor(timeLeft / 60);
-            const s = timeLeft % 60;
+        function updateDisplay(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
             document.getElementById('display').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
         }
 
         function resetTimer() {
-            clearInterval(timer);
+            clearInterval(timerInterval);
+            localStorage.removeItem('endTime');
             document.getElementById('display').innerText = "15:00";
         }
     </script>
